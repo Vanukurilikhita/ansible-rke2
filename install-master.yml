@@ -45,11 +45,13 @@
 
     - name: Save token to Jenkins workspace
       delegate_to: localhost
+      become: false
       copy:
         content: "{{ token_output.stdout }}"
         dest: "/var/lib/jenkins/workspace/rke2-ansible-pipeline/cluster-token.txt"
+        mode: '0644'
 
-    - name: Copy kubeconfig to user directory
+    - name: Copy kubeconfig to vboxuser home
       copy:
         src: /etc/rancher/rke2/rke2.yaml
         dest: /home/vboxuser/kubeconfig
