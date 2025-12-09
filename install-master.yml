@@ -3,9 +3,6 @@
   hosts: master
   become: yes
 
-  vars:
-    master_ip: "192.168.56.101"
-
   tasks:
 
     - name: Download RKE2 installer
@@ -24,10 +21,10 @@
       copy:
         dest: /etc/rancher/rke2/config.yaml
         content: |
+          node-ip: "192.168.56.101"
           tls-san:
-            - "{{ master_ip }}"
-          node-ip: "{{ master_ip }}"
-        mode: '0644'
+            - "192.168.56.101"
+      mode: '0644'
 
     - name: Install RKE2 server
       shell: INSTALL_RKE2_TYPE=server sh /tmp/rke2-install.sh
@@ -43,16 +40,17 @@
         seconds: 25
 
     - name: Read cluster join token
-      shell: cat /var/lib/rancher/rke2/server/token
+      command: cat /var/lib/rancher/rke2/server/token
       register: token_output
 
-    - name: Save token to local file
-      copy:
-        content: "{{ token_output.stdout }}"
-        dest: "./cluster-token.txt"
-      delegate_to: localhost
+    # IMPORTANT: Save token to Jenkins workspace (NO sudo required)
+    - name: Save token to Jenkins workspace
+      local_action:
+        module: copy
+        content="{{ token_output.stdout }}"
+        dest="/var/lib/jenkins/workspace/rke2-ansible-pipeline/cluster-token.txt"
 
-    - name: Copy kubeconfig to user home
+    - name: Copy kubeconfig to user directory
       copy:
         src: /etc/rancher/rke2/rke2.yaml
         dest: /home/vboxuser/kubeconfig
@@ -60,9 +58,3 @@
         owner: vboxuser
         group: vboxuser
         mode: '0644'
-
-    - name: Add KUBECONFIG to .bashrc permanently
-      lineinfile:
-        path: /home/vboxuser/.bashrc
-        line: 'export KUBECONFIG=/home/vboxuser/kubeconfig'
-        insertafter: EOF
