@@ -43,7 +43,7 @@
       command: cat /var/lib/rancher/rke2/server/token
       register: token_output
 
-    # ✅ CRITICAL FIX → This runs on Jenkins as normal user (no sudo)
+    # Save token to Jenkins workspace (no sudo)
     - name: Save token to Jenkins workspace
       delegate_to: localhost
       become: false
@@ -59,4 +59,13 @@
         remote_src: yes
         owner: vboxuser
         group: vboxuser
+        mode: '0644'
+
+    # NEW → Required for Jenkins kubectl commands
+    - name: Copy kubeconfig for Jenkins pipeline
+      delegate_to: localhost
+      become: false
+      copy:
+        src: "/etc/rancher/rke2/rke2.yaml"
+        dest: "/var/lib/jenkins/workspace/rke2-ansible-pipeline/kubeconfig"
         mode: '0644'
