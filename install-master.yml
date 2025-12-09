@@ -43,7 +43,6 @@
       command: cat /var/lib/rancher/rke2/server/token
       register: token_output
 
-    # Save token to Jenkins workspace (no sudo)
     - name: Save token to Jenkins workspace
       delegate_to: localhost
       become: false
@@ -52,20 +51,12 @@
         dest: "/var/lib/jenkins/workspace/rke2-ansible-pipeline/cluster-token.txt"
         mode: '0644'
 
-    - name: Copy kubeconfig to vboxuser home
-      copy:
-        src: /etc/rancher/rke2/rke2.yaml
-        dest: /home/vboxuser/kubeconfig
-        remote_src: yes
-        owner: vboxuser
-        group: vboxuser
-        mode: '0644'
+    # -------------------------------
+    # FIX → Correct way to transfer kubeconfig
+    # -------------------------------
 
-    # NEW → Required for Jenkins kubectl commands
-    - name: Copy kubeconfig for Jenkins pipeline
-      delegate_to: localhost
-      become: false
-      copy:
-        src: "/etc/rancher/rke2/rke2.yaml"
+    - name: Copy kubeconfig from master node to Jenkins
+      fetch:
+        src: /etc/rancher/rke2/rke2.yaml
         dest: "/var/lib/jenkins/workspace/rke2-ansible-pipeline/kubeconfig"
-        mode: '0644'
+        flat: yes
