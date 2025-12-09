@@ -1,0 +1,68 @@
+---
+- name: Install RKE2 Server (Master Node)
+  hosts: master
+  become: yes
+
+  vars:
+    master_ip: "192.168.56.101"
+
+  tasks:
+
+    - name: Download RKE2 installer
+      get_url:
+        url: https://get.rke2.io
+        dest: /tmp/rke2-install.sh
+        mode: '0755'
+
+    - name: Create RKE2 config directory
+      file:
+        path: /etc/rancher/rke2
+        state: directory
+        mode: '0755'
+
+    - name: Create server config file with correct IP
+      copy:
+        dest: /etc/rancher/rke2/config.yaml
+        content: |
+          tls-san:
+            - "{{ master_ip }}"
+          node-ip: "{{ master_ip }}"
+        mode: '0644'
+
+    - name: Install RKE2 server
+      shell: INSTALL_RKE2_TYPE=server sh /tmp/rke2-install.sh
+
+    - name: Enable and start rke2-server
+      systemd:
+        name: rke2-server
+        enabled: yes
+        state: started
+
+    - name: Wait for server to fully start
+      pause:
+        seconds: 25
+
+    - name: Read cluster join token
+      shell: cat /var/lib/rancher/rke2/server/token
+      register: token_output
+
+    - name: Save token to local file
+      copy:
+        content: "{{ token_output.stdout }}"
+        dest: "./cluster-token.txt"
+      delegate_to: localhost
+
+    - name: Copy kubeconfig to user home
+      copy:
+        src: /etc/rancher/rke2/rke2.yaml
+        dest: /home/vboxuser/kubeconfig
+        remote_src: yes
+        owner: vboxuser
+        group: vboxuser
+        mode: '0644'
+
+    - name: Add KUBECONFIG to .bashrc permanently
+      lineinfile:
+        path: /home/vboxuser/.bashrc
+        line: 'export KUBECONFIG=/home/vboxuser/kubeconfig'
+        insertafter: EOF

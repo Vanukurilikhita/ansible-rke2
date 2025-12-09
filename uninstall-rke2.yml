@@ -1,0 +1,23 @@
+---
+- name: Fully uninstall RKE2 from all nodes
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Run uninstall scripts
+      shell: |
+        if [ -f /usr/local/bin/rke2-uninstall.sh ]; then /usr/local/bin/rke2-uninstall.sh; fi
+        if [ -f /usr/local/bin/rke2-agent-uninstall.sh ]; then /usr/local/bin/rke2-agent-uninstall.sh; fi
+      ignore_errors: yes
+
+    - name: Remove leftover directories
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/rancher
+        - /var/lib/rancher
+        - /var/lib/rke2
+        - /var/lib/kubelet
+        - /var/lib/cni
+        - /etc/cni
