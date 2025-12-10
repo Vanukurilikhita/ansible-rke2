@@ -32,7 +32,7 @@
         mode: '0644'
 
     - name: Install RKE2 agent
-      shell: INSTALL_RKE2_VERSION=v1.27.9+rke2r1 INSTALL_RKE2_TYPE=agent sh /tmp/rke2-install.sh
+      shell: INSTALL_RKE2_VERSION=v1.33.6+rke2r1 INSTALL_RKE2_TYPE=agent sh /tmp/rke2-install.sh
 
     - name: Enable and start rke2-agent
       systemd:
