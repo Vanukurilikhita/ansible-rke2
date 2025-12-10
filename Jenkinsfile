@@ -3,14 +3,16 @@ pipeline {
 
     environment {
         ANSIBLE_HOST_KEY_CHECKING = 'False'
-        KUBECONFIG = "/var/lib/jenkins/kubeconfig"
+        KUBECONFIG = "/var/lib/jenkins/workspace/rke2-ansible-pipeline/kubeconfig"
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                git url: 'https://github.com/Likhitavanukuri/ansible-rke2.git', branch: 'main'
+                git url: 'git@github.com:Vanukurilikhita/ansible-rke2.git',
+                    branch: 'main',
+                    credentialsId: 'github-ssh-vanukurilikhita'
             }
         }
 
@@ -32,12 +34,21 @@ pipeline {
             }
         }
 
+        stage('Fix Kubeconfig Server IP') {
+            steps {
+                sh '''
+                    echo "🔧 Fixing kubeconfig IP..."
+                    sed -i 's/127.0.0.1/192.168.56.101/g' /var/lib/jenkins/workspace/rke2-ansible-pipeline/kubeconfig
+                '''
+            }
+        }
+
         stage('Wait for Nodes to Become Ready') {
             steps {
                 script {
                     echo "⏳ Waiting for master and worker to become Ready (max 2 minutes)..."
 
-                    retry(12) {   // 12 tries × 10 sec = 2 min
+                    retry(12) {
                         sleep 10
                         sh '''
                         export KUBECONFIG=/var/lib/jenkins/workspace/rke2-ansible-pipeline/kubeconfig
